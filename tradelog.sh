@@ -9,23 +9,22 @@ export POSIXLY_CORRECT=yes
 export LC_NUMERIC=en_US.UTF-8
 
 # Shows a help message
-show_help ()
-{
+show_help() {
   echo "usage: tradelog [-h|--help] [FILTER] [COMMAND] [LOG [LOG2 [...]]"
   echo ""
-	echo "Available commands:"
-	echo "list-tick   list of tickers in the trade log"
-	echo "profit      total profit from the closed positions"
-	echo "pos         value of open positions, ordered by value"
-	echo "last-price  last-known price for every ticker"
-	echo "hist-ord    transaction amount histogram by ticker"
-	echo "graph-pos   open position values graph"
+  echo "Available commands:"
+  echo "list-tick   list of tickers in the trade log"
+  echo "profit      total profit from the closed positions"
+  echo "pos         value of open positions, ordered by value"
+  echo "last-price  last-known price for every ticker"
+  echo "hist-ord    transaction amount histogram by ticker"
+  echo "graph-pos   open position values graph"
   echo ""
-	echo "FILTER can be a combination of:"
-	echo "-a DATETIME includes records after the specified date (excluding it). DATETIME format is YYYY-MM-DD HH:MM:SS."
-	echo "-b DATETIME includes records before the specified date (excluding it)."
-	echo "-t TICKER   only records of the specified ticker are included."
-	echo "-w WIDTH    for graphs sets the width (length) of the longest string."
+  echo "FILTER can be a combination of:"
+  echo "-a DATETIME includes records after the specified date (excluding it). DATETIME format is YYYY-MM-DD HH:MM:SS."
+  echo "-b DATETIME includes records before the specified date (excluding it)."
+  echo "-t TICKER   only records of the specified ticker are included."
+  echo "-w WIDTH    for graphs sets the width (length) of the longest string."
 }
 
 INPUT=""
@@ -67,14 +66,13 @@ while [ "$#" -gt 0 ]; do
     ;;
   -w)
     if [ $WIDTH -ne 0 ]; then
-        echo "Error: can't use -w option more then once"
-        exit 1
+      echo "Error: can't use -w option more then once"
+      exit 1
     fi
     if [ $2 -le 0 ]; then
-        echo "Error: -w parameter must be greater then zero"
-        exit 1
+      echo "Error: -w parameter must be greater then zero"
+      exit 1
     fi
-
     WIDTH="$2"
     shift
     shift
@@ -103,9 +101,9 @@ done
 
 # If no logs were specified, script would read from stdin
 if [ -z "$INPUT" ]; then
-    while read -r NEXT_LINE; do
-      INPUT="$INPUT$NEXT_LINE\n"
-    done
+  while read -r NEXT_LINE; do
+    INPUT="$INPUT$NEXT_LINE\n"
+  done
 fi
 
 # Filtering input
@@ -131,12 +129,12 @@ BEGIN {
 
 # Performing commands
 
-if [ "$COMMAND" = "" ]; then                # Command is empty => print filtered content
-   echo "$FILTERED"
-elif [ "$COMMAND" = "list-tick" ]; then     # Cycle through the filtered content and find all unique ticker entries
-  echo "$FILTERED" | awk --posix -F\; '{ print $2 }' | sort -u
-elif [ "$COMMAND" = "profit" ]; then        # Profit is calculated as a sum of sell transaction values minus sum of buy transaction values
-  echo "$FILTERED" | awk --posix -F\; '
+if [ "$COMMAND" = "" ]; then # Command is empty => print filtered content
+  printf "$FILTERED"
+elif [ "$COMMAND" = "list-tick" ]; then # Cycle through the filtered content and find all unique ticker entries
+  printf "$FILTERED" | awk --posix -F\; '{ print $2 }' | sort -u
+elif [ "$COMMAND" = "profit" ]; then # Profit is calculated as a sum of sell transaction values minus sum of buy transaction values
+  printf "$FILTERED" | awk --posix -F\; '
   BEGIN { sum = 0 }
   {
     if ($3 == "sell")
@@ -146,12 +144,12 @@ elif [ "$COMMAND" = "profit" ]; then        # Profit is calculated as a sum of s
   }
   END { printf "%.2f\n", sum }
   '
-elif [ "$COMMAND" = "pos" ]; then           # Prints total price of stocks, held at the current moment. Last-known price of the stock is used
+elif [ "$COMMAND" = "pos" ]; then # Prints total price of stocks, held at the current moment. Last-known price of the stock is used
   if [ -z "$FILTERED" ]; then
-      echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
-      exit 1
+    echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
+    exit 1
   fi
-  echo "$FILTERED" | awk --posix -F\; '
+  printf "$FILTERED" | awk --posix -F\; '
   {
     if ($3 == "buy")
       hold[$2] += $6
@@ -173,12 +171,12 @@ elif [ "$COMMAND" = "pos" ]; then           # Prints total price of stocks, held
       printf "%-10s: %*.2f\n", ticker, longest, values[ticker]
     }
   }' | sort -n -r -k 3
-elif [ "$COMMAND" = "last-price" ]; then    # Prints last known price of every stock.
+elif [ "$COMMAND" = "last-price" ]; then # Prints last known price of every stock.
   if [ -z "$FILTERED" ]; then
-      echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
-      exit 1
+    echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
+    exit 1
   fi
-  echo "$FILTERED" | awk --posix -F\; '
+  printf "$FILTERED" | awk --posix -F\; '
   {
     last_price[$2] = $4
   }
@@ -196,12 +194,12 @@ elif [ "$COMMAND" = "last-price" ]; then    # Prints last known price of every s
       printf "%-10s: %*.2f\n", ticker, longest, last_price[ticker]
     }
   }' | sort
-elif [ "$COMMAND" = "hist-ord" ]; then      # Draws a marvelous histogram, based on the amount of transactions for each ticker
+elif [ "$COMMAND" = "hist-ord" ]; then # Draws a marvelous histogram, based on the amount of transactions for each ticker
   if [ -z "$FILTERED" ]; then
-      echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
-      exit 1
+    echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
+    exit 1
   fi
-  echo "$FILTERED" | awk --posix -v width="$WIDTH" -F\; '
+  printf "$FILTERED" | awk --posix -v width="$WIDTH" -F\; '
   { ++transactions[$2] }
   END {
     if (width == 0) {
@@ -231,12 +229,12 @@ elif [ "$COMMAND" = "hist-ord" ]; then      # Draws a marvelous histogram, based
       }
     }
   }' | sort
-elif [ "$COMMAND" = "graph-pos" ]; then     # Draws a fancy graph, based on the total price of every stock, held at the current moment. # for positive, ! for negative
+elif [ "$COMMAND" = "graph-pos" ]; then # Draws a fancy graph, based on the total price of every stock, held at the current moment. # for positive, ! for negative
   if [ -z "$FILTERED" ]; then
-      echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
-      exit 1
+    echo "You are trying to run $COMMAND on empty content. Check your input and filters and try again"
+    exit 1
   fi
-  echo "$FILTERED" | awk --posix -v width="$WIDTH" -F\; '
+  printf "$FILTERED" | awk --posix -v width="$WIDTH" -F\; '
   function abs(x) {
     return x >= 0 ? x : -x
   }
